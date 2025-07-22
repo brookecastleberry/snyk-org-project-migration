@@ -20,13 +20,24 @@ Usage:
     python snyk_extract_targets.py
 """
 
-import requests
 import json
 import os
+import requests
 
-# Configuration - Update these for your environment
+
+# Configuration
 SOURCE_API_TOKEN = os.getenv("SOURCE_SNYK_API_TOKEN")
-SOURCE_GROUP_ID = "3de0eeb1-20e3-4afd-8a6a-97d57326588d"  # Update as needed
+API_VERSION = "2024-06-18"
+API_BASE_URL = "https://api.snyk.io"
+PAGINATION_LIMIT = 100
+
+# File paths
+TARGET_ORG_MAPPING_FILE = "snyk-created-orgs.json"
+SOURCE_ORGS_FILE = "snyk-source-orgs.json"
+OUTPUT_FILE = "snyk-import-targets.json"
+
+# GitHub integration types (in order of preference)
+GITHUB_INTEGRATION_TYPES = ["github", "github-cloud-app", "github-server-app"]
 
 
 def get_targets_for_org(org_id, api_token):
@@ -46,7 +57,7 @@ def get_targets_for_org(org_id, api_token):
     }
     
     all_targets = []
-    url = f"https://api.snyk.io/rest/orgs/{org_id}/targets?version=2024-06-18&limit=100"
+    url = f"{API_BASE_URL}/rest/orgs/{org_id}/targets?version={API_VERSION}&limit={PAGINATION_LIMIT}"
     
     while url:
         response = requests.get(url, headers=headers)
@@ -61,7 +72,7 @@ def get_targets_for_org(org_id, api_token):
         next_url = links.get("next")
         
         if next_url:
-            url = f"https://api.snyk.io{next_url}" if next_url.startswith("/") else next_url
+            url = f"{API_BASE_URL}{next_url}" if next_url.startswith("/") else next_url
         else:
             url = None
     
@@ -86,7 +97,7 @@ def get_projects_for_target(org_id, target_id, api_token):
     }
     
     all_projects = []
-    url = f"https://api.snyk.io/rest/orgs/{org_id}/projects?target_id={target_id}&version=2024-06-18&limit=100"
+    url = f"{API_BASE_URL}/rest/orgs/{org_id}/projects?target_id={target_id}&version={API_VERSION}&limit={PAGINATION_LIMIT}"
     
     while url:
         response = requests.get(url, headers=headers)
@@ -101,7 +112,7 @@ def get_projects_for_target(org_id, target_id, api_token):
         next_url = links.get("next")
         
         if next_url:
-            url = f"https://api.snyk.io{next_url}" if next_url.startswith("/") else next_url
+            url = f"{API_BASE_URL}{next_url}" if next_url.startswith("/") else next_url
         else:
             url = None
     
@@ -116,7 +127,7 @@ def get_target_org_mapping():
         dict: Mapping of source org names to target org info
     """
     try:
-        with open("snyk-created-orgs.json", "r") as f:
+        with open(TARGET_ORG_MAPPING_FILE, "r") as f:
             created_orgs = json.load(f)
         
         orgs_data = created_orgs.get("orgData", [])
@@ -132,7 +143,7 @@ def get_target_org_mapping():
         return org_mapping
         
     except FileNotFoundError:
-        print("ERROR: snyk-created-orgs.json not found.")
+        print(f"ERROR: {TARGET_ORG_MAPPING_FILE} not found.")
         print("Please run the organization creation script first to generate this file.")
         return {}
 
@@ -145,12 +156,12 @@ def get_source_orgs_from_json():
         list: List of source organization data
     """
     try:
-        with open("snyk-source-orgs.json", "r") as f:
+        with open(SOURCE_ORGS_FILE, "r") as f:
             data = json.load(f)
         return data.get("sourceOrgs", [])
         
     except FileNotFoundError:
-        print("ERROR: snyk-source-orgs.json not found.")
+        print(f"ERROR: {SOURCE_ORGS_FILE} not found.")
         print("Please run org_extraction.py first to generate this file.")
         return []
 
@@ -244,7 +255,8 @@ def create_target_entry(target_org_id, github_integration_id, target_info, branc
     """
     target_data = {
         "orgId": target_org_id,
-        "integrationId": github_integration_id
+        "integrationId": github_integration_id,
+        "exclusionGlobs": ""  # Required by import schema
     }
     
     if target_info:
@@ -252,10 +264,8 @@ def create_target_entry(target_org_id, github_integration_id, target_info, branc
         if branch:
             target_data["target"]["branch"] = branch
     
-    # Add empty exclusionGlobs for import structure
-    target_data["exclusionGlobs"] = ""
-    
     return target_data
+
 
 
 def extract_targets():
@@ -313,6 +323,7 @@ def extract_targets():
         print(f"\nProcessing org: {source_org_name} -> {target_org_id}")
         
         try:
+            # Get targets from the organization
             targets = get_targets_for_org(source_org_id, SOURCE_API_TOKEN)
             print(f"  Found {len(targets)} targets")
             
@@ -325,10 +336,18 @@ def extract_targets():
                 display_name = target_attrs.get("display_name", "")
                 print(f"  Processing target: {display_name}")
                 
-                # Verify GitHub integration exists
-                github_integration_id = target_integrations.get("github")
+                # Find GitHub integration (supports multiple GitHub integration types)
+                github_integration_id = None
+                found_integration_type = None
+                for integration_type in GITHUB_INTEGRATION_TYPES:
+                    if integration_type in target_integrations:
+                        github_integration_id = target_integrations[integration_type]
+                        found_integration_type = integration_type
+                        break
+                
                 if not github_integration_id:
                     print(f"    WARNING: No GitHub integration found for org {source_org_name}")
+                    print(f"    Available integrations: {list(target_integrations.keys())}")
                     continue
                 
                 # Parse target information from display_name
@@ -343,7 +362,6 @@ def extract_targets():
                 # Get project information to extract branch data
                 try:
                     projects = get_projects_for_target(source_org_id, target_id, SOURCE_API_TOKEN)
-                    print(f"    Found {len(projects)} projects for target")
                     project_attributes = extract_target_attributes_from_projects(projects)
                     
                 except Exception as e:
@@ -381,20 +399,38 @@ def extract_targets():
                             repo_info = f"{target_info.get('owner', '')}/{target_info.get('name', display_name or 'unknown')}:{branch}"
                             primary_note = " (primary)" if branch == primary_branch else ""
                             print(f"    Added target: {repo_info}{primary_note}")
+                
+                else:
+                    # Target has no projects - add it without branch information
+                    target_entry = create_target_entry(
+                        target_org_id, 
+                        github_integration_id, 
+                        target_info
+                    )
+                    all_targets.append(target_entry)
+                    
+                    repo_info = f"{target_info.get('owner', '')}/{target_info.get('name', display_name or 'unknown')}"
+                    print(f"    Added target: {repo_info} (no projects/branches)")
+                    
+                    # Simple warning for potential import issues
+                    if not target_info.get("owner") or not target_info.get("name"):
+                        print(f"    ⚠️  WARNING: Target may fail import - missing owner/name: {target_entry}")
                         
         except Exception as e:
-            print(f"Error processing org {source_org_name}: {e}")
+            error_msg = f"Error processing org {source_org_name}: {e}"
+            print(error_msg)
     
     # Save results to JSON file
     result = {"targets": all_targets}
     
-    output_filename = "snyk_import_targets.json"
-    with open(output_filename, "w") as f:
+    with open(OUTPUT_FILE, "w") as f:
         json.dump(result, f, indent=2)
     
     print(f"\nExtraction complete!")
     print(f"Total targets extracted: {len(all_targets)}")
-    print(f"Results saved to: {output_filename}")
+    print(f"Results saved to: {OUTPUT_FILE}")
+
+
 
 
 def main():

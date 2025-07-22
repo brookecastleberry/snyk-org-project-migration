@@ -21,8 +21,9 @@ import requests
 
 
 # Configuration Constants
-TARGET_GROUP_ID = "e8c96b2a-8b44-4d84-ada3-b6b9b2c8b1b8"
+TARGET_GROUP_ID = "ed871d95-d546-4df8-af36-5b2685ed01cf"
 SOURCE_GROUP_ID = "3de0eeb1-20e3-4afd-8a6a-97d57326588d"
+TEMPLATE_ORG_ID = "33380e4c-8d15-486f-a803-5c241df63e02"  #This is the organization in target group to copy settings from
 API_VERSION = "2024-06-18"
 OUTPUT_FILE = "snyk-orgs-to-create.json"
 
@@ -106,7 +107,8 @@ def create_migration_data(source_orgs: List[Dict[str, Any]]) -> Dict[str, List[D
         # Data for creating new organizations in target group
         org_data.append({
             "name": org_name,
-            "groupId": TARGET_GROUP_ID
+            "groupId": TARGET_GROUP_ID,
+            "sourceOrgId": TEMPLATE_ORG_ID
         })
         
         # Source organization reference for target extraction
