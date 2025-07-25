@@ -1,3 +1,82 @@
+# Snyk Org Project Migration
+
+This project helps you extract and migrate projects (targets) between Snyk organizations, supporting both single and multi-branch repositories.
+
+## Getting Started
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/brookecastleberry/snyk-org-project-migration.git
+cd snyk-org-project-migration
+```
+
+### Python Version
+
+This project requires Python 3.7+ (tested with Python 3.13.5).
+
+### Virtual Environment Setup
+
+Create and activate a virtual environment:
+
+**macOS/Linux:**
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+### Install Dependencies
+
+Install the required Python packages:
+
+```bash
+pip install requests
+```
+
+Alternatively, if a `requirements.txt` file is present:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Environment Variables
+
+Set up the required environment variable for the source Snyk API token:
+
+```bash
+export SOURCE_SNYK_API_TOKEN="your-source-snyk-api-token"
+```
+
+### Optional: Custom Log Path
+
+You can optionally set a custom log path for Snyk operations:
+
+```bash
+export SNYK_LOG_PATH="/path/to/your/logs"
+mkdir -p "$SNYK_LOG_PATH"  # Create the directory if it doesn't exist
+```
+
+## Usage
+
+To extract targets from source organizations, run:
+
+```bash
+python snyk_extract_targets.py
+```
+
+## Files
+
+- **`snyk_extract_targets.py`** - Main script for extracting targets (repositories) from source organizations and preparing them for import into target organizations. Handles both single and multi-branch repositories.
+- **`requirements.txt`** - Python package dependencies (can be created with `echo "requests>=2.25.0" > requirements.txt`)
+
+---
+
 # Snyk Organization Migration Tool
 
 This project provides scripts to migrate organizations and their targets (repositories) from one Snyk group to another. The migration process is split into two main phases: organization extraction and target extraction.
