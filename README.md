@@ -4,22 +4,31 @@ This project provides scripts to migrate organizations and their targets (reposi
 
 ## Overview
 
-The migration tool consists of two Python scripts:
+The migration tool consists of two main Python scripts:
+
 1. **`org_extraction.py`** - Extracts organization data from a source Snyk group
 2. **`snyk_extract_targets.py`** - Extracts targets (repositories) from source organizations for import into target organizations
 
+This tool enables a complete 4-step migration process that preserves organization structure and project configurations when moving between Snyk tenants.
+
 ## Prerequisites
 
-- Python 3.7+ (tested with Python 3.13.5)
-- Snyk API tokens for both source and target tenants
-- Access to both source and target Snyk groups
+Before getting started, ensure you have:
+
+- **Python 3.7+** (tested with Python 3.13.5)
+- **Snyk API tokens** for both source and target tenants
+- **Administrative access** to both source and target Snyk groups
+- **Git** installed on your local machine
 
 ## Installation & Setup
 
-### 1. Clone or Download the Project
+### 1. Clone the Repository
+
+Clone the repository from GitHub to your local machine:
 
 ```bash
-cd /path/to/snyk-org-project-migration
+git clone https://github.com/brookecastleberry/snyk-org-project-migration.git
+cd snyk-org-project-migration
 ```
 
 ### 2. Set Up Python Environment
@@ -103,10 +112,10 @@ npm install -g snyk-api-import
 
 # Set environment variables for target tenant
 export SNYK_TOKEN="your-target-tenant-api-token"
-export SNYK_LOG_PATH="/Users/brookecastleberry/snyk-logs"
+export SNYK_LOG_PATH="$HOME/snyk-logs"
 
 # Create log directory
-mkdir -p /Users/brookecastleberry/snyk-logs
+mkdir -p "$HOME/snyk-logs"
 
 # Create organizations
 DEBUG=snyk* snyk-api-import orgs:create --file="snyk-orgs-to-create.json"
@@ -138,19 +147,18 @@ Use the API Import Tool to import all targets and create projects in the target 
 snyk-api-import import --file=snyk-import-targets.json
 ```
 
-**Post-Import:** Check logs in `/Users/brookecastleberry/snyk-logs` for any project import failures that may need manual attention.
+**Post-Import:** Check logs in `$HOME/snyk-logs` for any project import failures that may need manual attention.
 
 ## File Structure
 
 ```
 snyk-org-project-migration/
-├── README.md                    # This file
-├── mcp.json                     # MCP server configuration
-├── org_extraction.py            # Phase 1: Organization extraction
-├── snyk_extract_targets.py      # Phase 2: Target extraction
-├── requirements.txt             # Python dependencies (optional)
-├── venv/                        # Virtual environment (created)
-└── Output files:
+├── README.md                    # This documentation file
+├── .gitignore                   # Git ignore configuration
+├── org_extraction.py            # Phase 1: Organization extraction script
+├── snyk_extract_targets.py      # Phase 2: Target extraction script
+├── venv/                        # Virtual environment (created during setup)
+└── Output files (generated):
     ├── snyk-orgs-to-create.json    # Phase 1 output
     ├── snyk-created-orgs.json      # Manual input for Phase 2
     ├── snyk-source-orgs.json       # Source org references
