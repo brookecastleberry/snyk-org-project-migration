@@ -37,7 +37,7 @@ SOURCE_ORGS_FILE = "snyk-source-orgs.json"
 OUTPUT_FILE = "snyk-import-targets.json"
 
 # GitHub integration types (in order of preference)
-GITHUB_INTEGRATION_TYPES = ["github", "github-cloud-app", "github-server-app"]
+GITHUB_INTEGRATION_TYPES = ["github-cloud-app", "github", "github-server-app"]
 
 
 def get_targets_for_org(org_id, api_token):
