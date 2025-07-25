@@ -1,6 +1,6 @@
 # Snyk Organization Migration Tool
 
-This project provides scripts to migrate organizations and their targets (repositories) from one Snyk group to another. The migration process is split into two main phases: organization extraction and target extraction.
+This project provides scripts to migrate organizations and their targets (repositories) from one Snyk group to another. The full migration process uses these files in addition to the api-import-tool to copy over organizations & targets from a source tenant to a target tenant then reimports projects.
 
 ## Overview
 
@@ -103,10 +103,10 @@ npm install -g snyk-api-import
 
 # Set environment variables for target tenant
 export SNYK_TOKEN="your-target-tenant-api-token"
-export SNYK_LOG_PATH="/Users/brookecastleberry/snyk-logs"
+export SNYK_LOG_PATH=""/path/to/snyk-logs""
 
 # Create log directory
-mkdir -p /Users/brookecastleberry/snyk-logs
+mkdir -p /path/to/snyk-logs
 
 # Create organizations
 DEBUG=snyk* snyk-api-import orgs:create --file="snyk-orgs-to-create.json"
@@ -145,7 +145,6 @@ snyk-api-import import --file=snyk-import-targets.json
 ```
 snyk-org-project-migration/
 ├── README.md                    # This file
-├── mcp.json                     # MCP server configuration
 ├── org_extraction.py            # Phase 1: Organization extraction
 ├── snyk_extract_targets.py      # Phase 2: Target extraction
 ├── requirements.txt             # Python dependencies (optional)
@@ -208,9 +207,3 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 ```
 
-## Contributing
-
-1. Follow Python PEP 8 style guidelines
-2. Add type hints for new functions
-3. Include docstrings for all functions
-4. Test with multiple organization sizes
