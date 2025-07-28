@@ -21,9 +21,9 @@ import requests
 
 
 # Configuration Constants
-TARGET_GROUP_ID = "ed871d95-d546-4df8-af36-5b2685ed01cf"
-SOURCE_GROUP_ID = "1b0b73d7-b29a-4b10-90a6-4df73898ef6b"
-TEMPLATE_ORG_ID = "33380e4c-8d15-486f-a803-5c241df63e02"  #This is the organization in target group to copy settings from
+TARGET_GROUP_ID = "TARGET_GROUP_ID"
+SOURCE_GROUP_ID = "SOURCE_GROUP_ID"
+TEMPLATE_ORG_ID = "TEMPLATE_ORG_ID"  #This is the organization in target group to copy settings from
 API_VERSION = "2024-06-18"
 OUTPUT_FILE = "snyk-orgs-to-create.json"
 
